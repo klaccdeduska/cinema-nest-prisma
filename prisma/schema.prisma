@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Cinema {
+  cinemaId  BigInt   @id @default(autoincrement()) @map("cinema_id")
+  name      String   @db.VarChar(100)
+  address   String   @db.VarChar(255)
+  phone     String?  @db.VarChar(30)
+  email     String?  @db.VarChar(254)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedOn DateTime @updatedAt @map("updated_on") @db.DateTime(0)
+  halls     Hall[]
+
+  @@map("cinemas")
+}
+
+model Genre {
+  genreId     BigInt       @id @default(autoincrement()) @map("genre_id")
+  name        String       @db.VarChar(40)
+  movieGenres MovieGenre[]
+
+  @@map("genres")
+}
+
+model Hall {
+  hallId     BigInt      @id @default(autoincrement()) @map("hall_id")
+  cinemaId   BigInt      @map("cinema_id")
+  name       String      @db.VarChar(50)
+  screenType String      @map("screen_type") @db.VarChar(20)
+  capacity   Int
+  cinema     Cinema      @relation(fields: [cinemaId], references: [cinemaId], map: "halls_cinemas_cinema_id_fk")
+  screenings Screening[]
+  seats      Seat[]
+
+  @@map("halls")
+}
+
+model Movie {
+  movieId         BigInt       @id @default(autoincrement()) @map("movie_id")
+  title           String       @db.VarChar(200)
+  description     String?      @db.Text
+  durationMinutes Int          @map("duration_minutes") @db.SmallInt
+  releaseDate     DateTime     @map("release_date") @db.Date
+  ageRating       String       @map("age_rating") @db.VarChar(10)
+  language        String       @db.VarChar(50)
+  country         String       @db.VarChar(40)
+  genres          MovieGenre[]
+  cast            MovieCast[]
+  crew            MovieCrew[]
+  screenings      Screening[]
+  reviews         Review[]
+
+  @@map("movies")
+}
+
+model MovieGenre {
+  movieId BigInt @map("movie_id")
+  genreId BigInt @map("genre_id")
+  movie   Movie  @relation(fields: [movieId], references: [movieId], map: "movie_genres_movies_movie_id_fk")
+  genre   Genre  @relation(fields: [genreId], references: [genreId], map: "movie_genres_genres_genre_id_fk")
+
+  @@id([movieId, genreId])
+  @@map("movie_genres")
+}
+
+model Person {
+  personId  BigInt      @id @default(autoincrement()) @map("person_id")
+  fullName  String      @map("full_name") @db.VarChar(100)
+  birthDate DateTime    @map("birth_date") @db.Date
+  biography String?     @db.Text
+  castRoles MovieCast[]
+  crewRoles MovieCrew[]
+
+  @@map("people")
+}
+
+model MovieCast {
+  movieId       BigInt @map("movie_id")
+  personId      BigInt @map("person_id")
+  characterName String @map("characher_name") @db.VarChar(150)
+  movie         Movie  @relation(fields: [movieId], references: [movieId], map: "movie_cast_movies_movie_id_fk")
+  person        Person @relation(fields: [personId], references: [personId], map: "movie_cast_people_person_id_fk")
+
+  @@id([movieId, personId])
+  @@map("movie_cast")
+}
+
+model MovieCrew {
+  movieId  BigInt @map("movie_id")
+  personId BigInt @map("person_id")
+  role     String @db.VarChar(30)
+  movie    Movie  @relation(fields: [movieId], references: [movieId], map: "movie_crew_movies_movie_id_fk")
+  person   Person @relation(fields: [personId], references: [personId], map: "movie_crew_people_person_id_fk")
+
+  @@id([personId, movieId])
+  @@map("movie_crew")
+}
+
+model Screening {
+  screeningId BigInt    @id @default(autoincrement()) @map("screening_id")
+  movieId     BigInt    @map("movie_id")
+  hallId      BigInt    @map("hall_id")
+  startsAt    DateTime  @map("starts_at") @db.DateTime(0)
+  endsAt      DateTime  @map("ends_at") @db.DateTime(0)
+  format      String    @db.VarChar(20)
+  price       Int
+  hall        Hall      @relation(fields: [hallId], references: [hallId], map: "screenings_halls_hall_id_fk")
+  movie       Movie     @relation(fields: [movieId], references: [movieId], map: "screenings_movies_movie_id_fk")
+  bookings    Booking[]
+  ticket      Ticket?
+
+  @@map("screenings")
+}
+
+model Seat {
+  seatId     BigInt   @id @default(autoincrement()) @map("seat_id")
+  hallId     BigInt   @map("hall_id")
+  rowNumber  Int      @map("row_number") @db.SmallInt
+  seatNumber Int      @map("seat_number") @db.SmallInt
+  seatType   String   @map("seat_type") @db.VarChar(20)
+  hall       Hall     @relation(fields: [hallId], references: [hallId], map: "seats_halls_hall_id_fk")
+  ticket     Ticket?
+
+  @@map("seats")
+}
+
+model User {
+  userId    BigInt    @id @default(autoincrement()) @map("user_id")
+  name      String    @db.VarChar(1024)
+  birthDate DateTime  @map("birth_date") @db.Date
+  email     String    @unique(map: "users_pk") @db.VarChar(254)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+  password  String    @db.VarChar(2048)
+  createdAt DateTime? @default(now()) @map("created_at") @db.DateTime(0)
+  bookings  Booking[]
+  news      News[]
+  reviews   Review[]
+
+  @@map("users")
+}
+
+model Booking {
+  bookingId   BigInt    @id @default(autoincrement()) @map("booking_id")
+  userId      BigInt    @map("user_id")
+  screeningId BigInt    @map("screening_id")
+  status      String    @db.VarChar(20)
+  bookedAt    DateTime  @map("booked_at") @db.DateTime(0)
+  expiresAt   DateTime? @map("expires_at") @db.DateTime(0)
+  screening   Screening @relation(fields: [screeningId], references: [screeningId], map: "bookings_screenings_screening_id_fk")
+  user        User      @relation(fields: [userId], references: [userId], map: "bookings_users_user_id_fk")
+  tickets     Ticket[]
+
+  @@map("bookings")
+}
+
+model News {
+  newsId      BigInt    @id @default(autoincrement()) @map("news_id")
+  userId      BigInt    @map("user_id")
+  title       String    @db.VarChar(200)
+  content     String    @db.Text
+  publishedAt DateTime? @default(now()) @map("published_at") @db.DateTime(0)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+  user        User      @relation(fields: [userId], references: [userId], map: "news_users_user_id_fk")
+
+  @@map("news")
+}
+
+model Review {
+  reviewId BigInt   @id @default(autoincrement()) @map("review_id")
+  userId   BigInt   @map("user_id")
+  movieId  BigInt   @map("movie_id")
+  rating   Int      @db.SmallInt
+  title    String   @db.VarChar(200)
+  body     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedOn DateTime @updatedAt @map("updated_on") @db.DateTime(0)
+  movie    Movie    @relation(fields: [movieId], references: [movieId], map: "reviews_movies_movie_id_fk")
+  user     User     @relation(fields: [userId], references: [userId], map: "reviews_users_user_id_fk")
+
+  @@map("reviews")
+}
+
+model Ticket {
+  ticketsId   BigInt    @id @default(autoincrement()) @map("tickets_id")
+  bookingId   BigInt    @map("booking_id")
+  screeningId BigInt    @unique(map: "tickets_pk") @map("screening_id")
+  seatId      BigInt    @unique(map: "tickets_pk_2") @map("seat_id")
+  price       Int
+  status      String    @db.VarChar(20)
+  issuedAt    DateTime  @map("issued_at") @db.DateTime(0)
+  booking     Booking   @relation(fields: [bookingId], references: [bookingId], map: "tickets_bookings_booking_id_fk")
+  screening   Screening @relation(fields: [screeningId], references: [screeningId], map: "tickets_screenings_screening_id_fk")
+  seat        Seat      @relation(fields: [seatId], references: [seatId], map: "tickets_seats_seat_id_fk")
+
+  @@map("tickets")
+}

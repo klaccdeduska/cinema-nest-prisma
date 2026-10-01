@@ -1,0 +1,32 @@
+services:
+  db:
+    image: mariadb:11.4
+    container_name: cinema-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: cinema
+      MARIADB_USER: cinema
+      MARIADB_PASSWORD: cinema
+    ports:
+      - "33062:3306"
+    volumes:
+      - cinema_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  adminer:
+    image: adminer:latest
+    container_name: cinema-adminer
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+volumes:
+  cinema_db_data:
